@@ -1,0 +1,1589 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>生産管理システム</title>
+    
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            margin: 20px;
+            background-color: #f0f0f0;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+        }
+        h1 {
+            color: #333;
+            border-bottom: 3px solid #4CAF50;
+            padding-bottom: 10px;
+        }
+        .sync-status {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .sync-status.online {
+            background: #4CAF50;
+            color: white;
+        }
+        .sync-status.offline {
+            background: #FF9800;
+            color: white;
+        }
+        .sync-status.syncing {
+            background: #2196F3;
+            color: white;
+        }
+        .sync-status.error {
+            background: #f44336;
+            color: white;
+        }
+        .firebase-notice {
+            background: #FFF3E0;
+            border: 1px solid #FFB74D;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        .firebase-notice.success {
+            background: #E8F5E9;
+            border-color: #4CAF50;
+        }
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        .tab-button {
+            padding: 10px 20px;
+            border: none;
+            background: #e0e0e0;
+            cursor: pointer;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        .tab-button.active {
+            background: #4CAF50;
+            color: white;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .card {
+            border: 1px solid #ddd;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+            background: #fafafa;
+        }
+        .form-row {
+            display: flex;
+            gap: 15px;
+            margin: 10px 0;
+            align-items: end;
+            flex-wrap: wrap;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        label {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 3px;
+        }
+        input, select {
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        input[type="number"] {
+            width: 120px;
+        }
+        input[type="text"] {
+            width: 150px;
+        }
+        input[type="date"] {
+            width: 140px;
+        }
+        select {
+            width: 150px;
+        }
+        button {
+            padding: 10px 20px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background: #4CAF50;
+            color: white;
+            font-weight: normal;
+        }
+        tr:hover {
+            background: #f5f5f5;
+        }
+        .complete-btn {
+            background: #2196F3;
+            padding: 5px 10px;
+            font-size: 12px;
+        }
+        .complete-btn:hover {
+            background: #1976D2;
+        }
+        .reopen-btn {
+            background: #FF9800;
+            padding: 5px 10px;
+            font-size: 12px;
+        }
+        .reopen-btn:hover {
+            background: #F57C00;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #e0e0e0;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4CAF50, #45a049);
+            color: white;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .progress-fill.complete {
+            background: linear-gradient(90deg, #2196F3, #1976D2);
+        }
+        .history-item {
+            background: white;
+            padding: 10px;
+            margin: 5px 0;
+            border-left: 4px solid #4CAF50;
+            border-radius: 3px;
+        }
+        .history-date {
+            font-weight: bold;
+            color: #4CAF50;
+        }
+        .empty {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        .stat-label {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        .warehouse-header {
+            background: linear-gradient(90deg, #4CAF50, #45a049);
+            color: white;
+            padding: 10px;
+            margin: 15px 0 5px 0;
+            border-radius: 5px;
+        }
+        .stock-card {
+            background: white;
+            border: 2px solid #4CAF50;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .stock-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+        .destination-badge {
+            background: #2196F3;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-size: 12px;
+            margin-left: 5px;
+        }
+        .summary-section {
+            background: white;
+            border: 2px solid #2196F3;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+        }
+        .summary-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #2196F3;
+            margin-bottom: 10px;
+        }
+        .order-no {
+            background: #FFC107;
+            color: #333;
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .completed-badge {
+            background: #4CAF50;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-size: 12px;
+            margin-left: 5px;
+        }
+        .in-badge {
+            background: #4CAF50;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 11px;
+        }
+        .out-badge {
+            background: #f44336;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 11px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏭 生産管理システム</h1>
+        <div id="syncStatus" class="sync-status offline">
+            <span id="syncText">起動中...</span>
+        </div>
+        
+        <div id="firebaseNotice" class="firebase-notice" style="display: none;">
+            <span id="noticeText"></span>
+        </div>
+        
+        <div class="tabs">
+            <button class="tab-button active" onclick="showTab('fabric', event)">生機製織管理</button>
+            <button class="tab-button" onclick="showTab('completed', event)">完了済み</button>
+            <button class="tab-button" onclick="showTab('ishii-stock', event)">生機在庫管理</button>
+            <button class="tab-button" onclick="showTab('yarn', event)">原糸在庫管理</button>
+            <button class="tab-button" onclick="showTab('yarn-history', event)">原糸入出庫履歴</button>
+            <button class="tab-button" onclick="showTab('weaving-history', event)">製織履歴</button>
+            <button class="tab-button" onclick="showTab('report', event)">レポート</button>
+        </div>
+        
+        <!-- 生機製織管理 -->
+        <div id="fabric" class="tab-content active">
+            <div class="card">
+                <h2>📋 プロジェクト登録</h2>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>プロジェクト名</label>
+                        <input type="text" id="projectName" placeholder="プロジェクト名">
+                    </div>
+                    <div class="form-group">
+                        <label>品番</label>
+                        <input type="text" id="productCode" placeholder="例: F-001">
+                    </div>
+                    <div class="form-group">
+                        <label>計画反数</label>
+                        <input type="number" id="plannedRolls" placeholder="反数" step="1">
+                    </div>
+                    <div class="form-group">
+                        <label>計画メートル数</label>
+                        <input type="number" id="plannedMeters" placeholder="m数" step="0.1">
+                    </div>
+                    <div class="form-group">
+                        <label>開始日</label>
+                        <input type="date" id="startDate">
+                    </div>
+                    <button onclick="addProject()">登録</button>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h2>📊 日別製織入力</h2>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>プロジェクト</label>
+                        <select id="selectProject">
+                            <option value="">プロジェクトを選択</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>製織日</label>
+                        <input type="date" id="productionDate">
+                    </div>
+                    <div class="form-group">
+                        <label>製織反数</label>
+                        <input type="number" id="productionRolls" placeholder="反数" step="1">
+                    </div>
+                    <div class="form-group">
+                        <label>製織メートル数</label>
+                        <input type="number" id="productionMeters" placeholder="m数" step="0.1">
+                    </div>
+                    <div class="form-group">
+                        <label>投入先</label>
+                        <select id="destination">
+                            <option value="">投入先を選択</option>
+                            <option value="石井加工">石井加工</option>
+                            <option value="社内保管">社内保管</option>
+                            <option value="直接出荷">直接出荷</option>
+                            <option value="その他">その他</option>
+                        </select>
+                    </div>
+                    <button onclick="addProduction()">登録</button>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h2>📑 進行中プロジェクト一覧</h2>
+                <div id="projectList"></div>
+            </div>
+        </div>
+        
+        <!-- 完了済みタブ -->
+        <div id="completed" class="tab-content">
+            <div class="card">
+                <h2>✅ 完了済みプロジェクト</h2>
+                <div id="completedList"></div>
+            </div>
+        </div>
+        
+        <!-- 生機在庫管理（石井加工） -->
+        <div id="ishii-stock" class="tab-content">
+            <div class="card">
+                <h2>🏭 石井加工 在庫状況</h2>
+                <div id="ishiiStockList"></div>
+            </div>
+            
+            <div class="card">
+                <h2>📤 石井加工からの出庫</h2>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>品番</label>
+                        <select id="ishiiOutCode">
+                            <option value="">品番を選択</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>適用指図No</label>
+                        <input type="text" id="orderNo" placeholder="例: A-12345">
+                    </div>
+                    <div class="form-group">
+                        <label>出庫反数</label>
+                        <input type="number" id="ishiiOutRolls" placeholder="反数" step="1">
+                    </div>
+                    <div class="form-group">
+                        <label>出庫メートル数</label>
+                        <input type="number" id="ishiiOutMeters" placeholder="m数" step="0.1">
+                    </div>
+                    <div class="form-group">
+                        <label>出庫日</label>
+                        <input type="date" id="ishiiOutDate">
+                    </div>
+                    <div class="form-group">
+                        <label>備考</label>
+                        <input type="text" id="ishiiOutNote" placeholder="出庫理由など">
+                    </div>
+                    <button onclick="ishiiShipOut()">出庫登録</button>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h2>📋 出庫履歴</h2>
+                <div id="ishiiShipmentHistory"></div>
+            </div>
+        </div>
+        
+        <!-- 原糸在庫管理 -->
+        <div id="yarn" class="tab-content">
+            <div class="card">
+                <h2>📦 原糸入出庫登録</h2>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>プロジェクト</label>
+                        <select id="yarnProject">
+                            <option value="">プロジェクトを選択（任意）</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>糸品番</label>
+                        <input type="text" id="yarnCode" placeholder="例: Y-001">
+                    </div>
+                    <div class="form-group">
+                        <label>投入先</label>
+                        <select id="warehouse">
+                            <option value="">投入先選択</option>
+                            <option value="川上織物">川上織物</option>
+                            <option value="加美サイジング">加美サイジング</option>
+                            <option value="岸田サイジング">岸田サイジング</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>入出庫</label>
+                        <select id="yarnType">
+                            <option value="入庫">入庫</option>
+                            <option value="出庫">出庫</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>重量</label>
+                        <input type="number" id="yarnWeight" placeholder="重量" step="0.01">
+                    </div>
+                    <div class="form-group">
+                        <label>単位</label>
+                        <select id="weightUnit">
+                            <option value="kg">kg</option>
+                            <option value="ポンド">ポンド</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>日付</label>
+                        <input type="date" id="yarnDate">
+                    </div>
+                    <div class="form-group">
+                        <label>備考</label>
+                        <input type="text" id="yarnNote" placeholder="備考（任意）">
+                    </div>
+                    <button onclick="addYarn()">登録</button>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h2>🏢 投入先別在庫状況</h2>
+                <div id="warehouseList"></div>
+            </div>
+        </div>
+        
+        <!-- 原糸入出庫履歴 -->
+        <div id="yarn-history" class="tab-content">
+            <div class="card">
+                <h2>📋 原糸入出庫履歴</h2>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>フィルター：糸品番</label>
+                        <select id="yarnHistoryFilter" onchange="updateYarnHistory()">
+                            <option value="">全品番</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>フィルター：投入先</label>
+                        <select id="yarnDestFilter" onchange="updateYarnHistory()">
+                            <option value="">全投入先</option>
+                            <option value="川上織物">川上織物</option>
+                            <option value="加美サイジング">加美サイジング</option>
+                            <option value="岸田サイジング">岸田サイジング</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="yarnHistoryList"></div>
+            </div>
+        </div>
+        
+        <!-- 製織履歴 -->
+        <div id="weaving-history" class="tab-content">
+            <div class="card">
+                <h2>📅 製織履歴詳細</h2>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>フィルター：プロジェクト</label>
+                        <select id="historyFilter" onchange="updateProductionHistory()">
+                            <option value="">全プロジェクト</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="productionHistory"></div>
+            </div>
+        </div>
+        
+        <!-- レポート -->
+        <div id="report" class="tab-content">
+            <div class="card">
+                <h2>📈 統計情報</h2>
+                <div id="stats"></div>
+            </div>
+            
+            <div class="card">
+                <h2>📊 在庫サマリー</h2>
+                <div id="inventorySummary"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDKを最後に読み込み -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-database-compat.js"></script>
+
+    <script>
+        // グローバル変数
+        let database = null;
+        let isFirebaseConnected = false;
+        let projects = [];
+        let productions = [];
+        let yarns = [];
+        let ishiiStock = [];
+        let ishiiShipments = [];
+
+        // Firebase設定
+        const firebaseConfig = {
+            apiKey: "AIzaSyB7ftwvUKW5-O_2E8LCE-_4rJPOSGdoaMY",
+            authDomain: "production-management-e9032.firebaseapp.com",
+            databaseURL: "https://production-management-e9032-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "production-management-e9032",
+            storageBucket: "production-management-e9032.firebasestorage.app",
+            messagingSenderId: "1091531720889",
+            appId: "1:1091531720889:web:a66b5f83861d1a0c4bb368"
+        };
+
+        // 初期化
+        function init() {
+            console.log('システム初期化開始');
+            
+            // 日付設定
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('startDate').value = today;
+            document.getElementById('productionDate').value = today;
+            document.getElementById('yarnDate').value = today;
+            document.getElementById('ishiiOutDate').value = today;
+            
+            // まずローカルデータを読み込み
+            loadLocalData();
+            
+            // 画面を即座に更新（ローカルデータを表示）
+            updateAllDisplays();
+            
+            // Firebaseを試みる
+            setTimeout(() => {
+                tryFirebaseConnection();
+            }, 500);
+        }
+
+        // Firebase接続を試みる
+        function tryFirebaseConnection() {
+            try {
+                if (typeof firebase !== 'undefined') {
+                    console.log('Firebase SDK検出');
+                    firebase.initializeApp(firebaseConfig);
+                    database = firebase.database();
+                    
+                    // 接続テスト
+                    database.ref('.info/connected').on('value', (snap) => {
+                        if (snap.val() === true) {
+                            isFirebaseConnected = true;
+                            updateSyncStatus('online');
+                            showNotice('Firebase接続成功！データは自動同期されます', 'success');
+                            setupDataListeners();
+                        } else {
+                            isFirebaseConnected = false;
+                            updateSyncStatus('offline');
+                            showNotice('オフラインモード（デバイス内保存）', 'warning');
+                        }
+                    });
+                } else {
+                    console.log('Firebase SDK未検出 - ローカルモードで動作');
+                    isFirebaseConnected = false;
+                    updateSyncStatus('offline');
+                    showNotice('ローカルモード（デバイス内保存）で動作中', 'warning');
+                }
+            } catch (error) {
+                console.error('Firebase初期化エラー:', error);
+                isFirebaseConnected = false;
+                updateSyncStatus('error');
+                showNotice('クラウド接続エラー - ローカルモードで動作', 'warning');
+            }
+        }
+
+        // お知らせ表示
+        function showNotice(message, type) {
+            const notice = document.getElementById('firebaseNotice');
+            const text = document.getElementById('noticeText');
+            notice.style.display = 'block';
+            notice.className = 'firebase-notice ' + (type === 'success' ? 'success' : '');
+            text.textContent = message;
+            
+            setTimeout(() => {
+                notice.style.display = 'none';
+            }, 5000);
+        }
+
+        // ローカルデータ読み込み
+        function loadLocalData() {
+            try {
+                console.log('ローカルデータ読み込み開始');
+                projects = JSON.parse(localStorage.getItem('projects_pm') || '[]');
+                productions = JSON.parse(localStorage.getItem('productions_pm') || '[]');
+                yarns = JSON.parse(localStorage.getItem('yarns_pm') || '[]');
+                ishiiStock = JSON.parse(localStorage.getItem('ishiiStock_pm') || '[]');
+                ishiiShipments = JSON.parse(localStorage.getItem('ishiiShipments_pm') || '[]');
+                
+                console.log('読み込みデータ:', {
+                    projects: projects.length,
+                    productions: productions.length,
+                    yarns: yarns.length,
+                    ishiiStock: ishiiStock.length,
+                    ishiiShipments: ishiiShipments.length
+                });
+                
+                console.log('ローカルデータ読み込み完了');
+            } catch (e) {
+                console.error('ローカルデータ読み込みエラー:', e);
+                // エラー時は空配列を設定
+                projects = [];
+                productions = [];
+                yarns = [];
+                ishiiStock = [];
+                ishiiShipments = [];
+            }
+        }
+
+        // Firebaseリスナー設定
+        function setupDataListeners() {
+            if (!database || !isFirebaseConnected) return;
+            
+            console.log('Firebaseリスナー設定開始');
+            
+            database.ref('projects').on('value', (snapshot) => {
+                const data = snapshot.val();
+                projects = data ? Object.keys(data).map(key => ({...data[key], id: key})) : [];
+                localStorage.setItem('projects_pm', JSON.stringify(projects));
+                updateAllDisplays();
+            });
+            
+            database.ref('productions').on('value', (snapshot) => {
+                const data = snapshot.val();
+                productions = data ? Object.keys(data).map(key => ({...data[key], id: key})) : [];
+                localStorage.setItem('productions_pm', JSON.stringify(productions));
+                updateAllDisplays();
+            });
+            
+            database.ref('yarns').on('value', (snapshot) => {
+                const data = snapshot.val();
+                yarns = data ? Object.keys(data).map(key => ({...data[key], id: key})) : [];
+                localStorage.setItem('yarns_pm', JSON.stringify(yarns));
+                updateAllDisplays();
+            });
+            
+            database.ref('ishiiStock').on('value', (snapshot) => {
+                const data = snapshot.val();
+                ishiiStock = data ? Object.keys(data).map(key => ({...data[key], productCode: key})) : [];
+                localStorage.setItem('ishiiStock_pm', JSON.stringify(ishiiStock));
+                updateAllDisplays();
+            });
+            
+            database.ref('ishiiShipments').on('value', (snapshot) => {
+                const data = snapshot.val();
+                ishiiShipments = data ? Object.keys(data).map(key => ({...data[key], id: key})) : [];
+                localStorage.setItem('ishiiShipments_pm', JSON.stringify(ishiiShipments));
+                updateAllDisplays();
+            });
+        }
+
+        // データ保存
+        function saveData(type, data) {
+            // 常にローカルに保存
+            localStorage.setItem(type + '_pm', JSON.stringify(data));
+            console.log('ローカル保存完了:', type);
+            
+            // Firebaseが接続されていれば同期
+            if (database && isFirebaseConnected) {
+                updateSyncStatus('syncing');
+                
+                try {
+                    const ref = database.ref(type);
+                    
+                    if (type === 'ishiiStock') {
+                        const stockObj = {};
+                        data.forEach(item => {
+                            stockObj[item.productCode] = {
+                                rolls: item.rolls,
+                                meters: item.meters
+                            };
+                        });
+                        ref.set(stockObj).then(() => {
+                            updateSyncStatus('online');
+                        }).catch(error => {
+                            console.error('Firebase保存エラー:', error);
+                            updateSyncStatus('error');
+                        });
+                    } else {
+                        const dataObj = {};
+                        data.forEach(item => {
+                            const id = item.id || Date.now().toString();
+                            dataObj[id] = {...item, id: undefined};
+                        });
+                        ref.set(dataObj).then(() => {
+                            updateSyncStatus('online');
+                        }).catch(error => {
+                            console.error('Firebase保存エラー:', error);
+                            updateSyncStatus('error');
+                        });
+                    }
+                } catch (error) {
+                    console.error('保存エラー:', error);
+                }
+            } else {
+                // ローカルモードの場合はステータス更新
+                updateSyncStatus('offline');
+            }
+        }
+
+        // 同期状態更新
+        function updateSyncStatus(status) {
+            const statusEl = document.getElementById('syncStatus');
+            const textEl = document.getElementById('syncText');
+            
+            statusEl.className = 'sync-status ' + status;
+            
+            switch(status) {
+                case 'online':
+                    textEl.textContent = '✓ クラウド同期中';
+                    break;
+                case 'offline':
+                    textEl.textContent = '💾 ローカル保存';
+                    break;
+                case 'syncing':
+                    textEl.textContent = '🔄 同期中...';
+                    break;
+                case 'error':
+                    textEl.textContent = '⚠ エラー (ローカル保存)';
+                    break;
+                default:
+                    textEl.textContent = '起動中...';
+            }
+        }
+
+        // 全画面更新
+        function updateAllDisplays() {
+            updateProjectList();
+            updateCompletedList();
+            updateProjectSelect();
+            updateYarnProjectSelect();
+            updateWarehouseList();
+            updateHistoryFilter();
+            updateYarnHistoryFilter();
+            updateIshiiStock();
+            updateIshiiCodeSelect();
+            updateIshiiShipmentHistory();
+        }
+
+        // タブ切り替え
+        function showTab(tabName, event) {
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            document.getElementById(tabName).classList.add('active');
+            if (event && event.target) {
+                event.target.classList.add('active');
+            }
+            
+            if (tabName === 'weaving-history') {
+                updateProductionHistory();
+            } else if (tabName === 'yarn-history') {
+                updateYarnHistory();
+            } else if (tabName === 'report') {
+                updateStats();
+                updateInventorySummary();
+            }
+        }
+
+        // プロジェクト追加
+        function addProject() {
+            const name = document.getElementById('projectName').value;
+            const code = document.getElementById('productCode').value;
+            const rolls = document.getElementById('plannedRolls').value;
+            const meters = document.getElementById('plannedMeters').value;
+            const date = document.getElementById('startDate').value;
+            
+            if (!name || !code || !date || (!rolls && !meters)) {
+                alert('プロジェクト名、品番、開始日、および反数またはメートル数を入力してください');
+                return;
+            }
+            
+            const project = {
+                id: Date.now().toString(),
+                name: name,
+                productCode: code,
+                plannedRolls: parseInt(rolls) || 0,
+                plannedMeters: parseFloat(meters) || 0,
+                startDate: date,
+                completed: false,
+                createdDate: new Date().toISOString().split('T')[0]
+            };
+            
+            projects.push(project);
+            saveData('projects', projects);
+            
+            document.getElementById('projectName').value = '';
+            document.getElementById('productCode').value = '';
+            document.getElementById('plannedRolls').value = '';
+            document.getElementById('plannedMeters').value = '';
+            
+            updateAllDisplays();  // 画面を即座に更新
+            alert('プロジェクトを登録しました');
+        }
+
+        // 生産数量追加
+        function addProduction() {
+            const projectId = document.getElementById('selectProject').value;
+            const date = document.getElementById('productionDate').value;
+            const rolls = document.getElementById('productionRolls').value;
+            const meters = document.getElementById('productionMeters').value;
+            const destination = document.getElementById('destination').value;
+            
+            if (!projectId || !date || !destination || (!rolls && !meters)) {
+                alert('プロジェクト、日付、投入先、および反数またはメートル数を入力してください');
+                return;
+            }
+            
+            const project = projects.find(p => p.id === projectId);
+            if (!project) {
+                alert('プロジェクトが見つかりません');
+                return;
+            }
+            
+            const production = {
+                id: Date.now().toString(),
+                projectId: projectId,
+                projectName: project.name,
+                productCode: project.productCode,
+                date: date,
+                rolls: parseInt(rolls) || 0,
+                meters: parseFloat(meters) || 0,
+                destination: destination,
+                createdDate: new Date().toISOString().split('T')[0]
+            };
+            
+            productions.push(production);
+            saveData('productions', productions);
+            
+            if (destination === '石井加工') {
+                updateIshiiStockData(project.productCode, parseInt(rolls) || 0, parseFloat(meters) || 0, 'in');
+            }
+            
+            document.getElementById('productionRolls').value = '';
+            document.getElementById('productionMeters').value = '';
+            
+            updateAllDisplays();  // 画面を即座に更新
+            alert('製織数量を登録しました');
+        }
+
+        // プロジェクト完了
+        function completeProject(id) {
+            const project = projects.find(p => p.id === id);
+            if (project) {
+                project.completed = true;
+                project.completedDate = new Date().toISOString().split('T')[0];
+                saveData('projects', projects);
+                updateAllDisplays();  // 画面を即座に更新
+            }
+        }
+
+        // プロジェクト再開
+        function reopenProject(id) {
+            const project = projects.find(p => p.id === id);
+            if (project) {
+                project.completed = false;
+                delete project.completedDate;
+                saveData('projects', projects);
+                updateAllDisplays();  // 画面を即座に更新
+            }
+        }
+
+        // 石井加工在庫データ更新
+        function updateIshiiStockData(code, rolls, meters, type) {
+            let stock = ishiiStock.find(s => s.productCode === code);
+            
+            if (!stock) {
+                stock = {
+                    productCode: code,
+                    rolls: 0,
+                    meters: 0
+                };
+                ishiiStock.push(stock);
+            }
+            
+            if (type === 'in') {
+                stock.rolls += rolls;
+                stock.meters += meters;
+            } else {
+                stock.rolls -= rolls;
+                stock.meters -= meters;
+            }
+            
+            saveData('ishiiStock', ishiiStock);
+            updateAllDisplays();  // 画面を即座に更新
+        }
+
+        // 石井加工からの出庫
+        function ishiiShipOut() {
+            const code = document.getElementById('ishiiOutCode').value;
+            const orderNo = document.getElementById('orderNo').value;
+            const rolls = document.getElementById('ishiiOutRolls').value;
+            const meters = document.getElementById('ishiiOutMeters').value;
+            const date = document.getElementById('ishiiOutDate').value;
+            const note = document.getElementById('ishiiOutNote').value;
+            
+            if (!code || !orderNo || !date || (!rolls && !meters)) {
+                alert('品番、適用指図No、日付、および反数またはメートル数を入力してください');
+                return;
+            }
+            
+            const shipment = {
+                id: Date.now().toString(),
+                productCode: code,
+                orderNo: orderNo,
+                rolls: parseInt(rolls) || 0,
+                meters: parseFloat(meters) || 0,
+                date: date,
+                note: note,
+                createdDate: new Date().toISOString().split('T')[0]
+            };
+            
+            ishiiShipments.push(shipment);
+            saveData('ishiiShipments', ishiiShipments);
+            
+            updateIshiiStockData(code, parseInt(rolls) || 0, parseFloat(meters) || 0, 'out');
+            
+            document.getElementById('orderNo').value = '';
+            document.getElementById('ishiiOutRolls').value = '';
+            document.getElementById('ishiiOutMeters').value = '';
+            document.getElementById('ishiiOutNote').value = '';
+            
+            updateAllDisplays();  // 画面を即座に更新
+            alert('出庫を登録しました');
+        }
+
+        // 原糸追加
+        function addYarn() {
+            const projectId = document.getElementById('yarnProject').value;
+            const code = document.getElementById('yarnCode').value;
+            const warehouse = document.getElementById('warehouse').value;
+            const type = document.getElementById('yarnType').value;
+            const weight = document.getElementById('yarnWeight').value;
+            const unit = document.getElementById('weightUnit').value;
+            const date = document.getElementById('yarnDate').value;
+            const note = document.getElementById('yarnNote').value;
+            
+            if (!code || !warehouse || !weight || !date) {
+                alert('糸品番、投入先、重量、日付を入力してください');
+                return;
+            }
+            
+            let projectName = '';
+            if (projectId) {
+                const project = projects.find(p => p.id === projectId);
+                if (project) {
+                    projectName = project.name;
+                }
+            }
+            
+            const yarn = {
+                id: Date.now().toString(),
+                projectId: projectId || null,
+                projectName: projectName,
+                code: code,
+                warehouse: warehouse,
+                type: type,
+                weight: parseFloat(weight),
+                unit: unit,
+                date: date,
+                note: note,
+                createdDate: new Date().toISOString().split('T')[0]
+            };
+            
+            yarns.push(yarn);
+            saveData('yarns', yarns);
+            
+            document.getElementById('yarnCode').value = '';
+            document.getElementById('yarnWeight').value = '';
+            document.getElementById('yarnNote').value = '';
+            
+            updateAllDisplays();  // 画面を即座に更新
+            alert('原糸在庫を登録しました');
+        }
+
+        // プロジェクト一覧更新
+        function updateProjectList() {
+            const container = document.getElementById('projectList');
+            if (!container) return;
+            
+            const activeProjects = projects.filter(p => !p.completed);
+            
+            if (activeProjects.length === 0) {
+                container.innerHTML = '<p class="empty">進行中のプロジェクトがありません</p>';
+                return;
+            }
+            
+            let html = '<table>';
+            html += '<tr><th>プロジェクト名</th><th>品番</th><th>計画反数</th><th>計画m数</th><th>製織反数</th><th>製織m数</th><th>反数進捗</th><th>m数進捗</th><th>開始日</th><th>登録日</th><th>操作</th></tr>';
+            
+            activeProjects.forEach(project => {
+                const produced = getProducedAmount(project.id);
+                const rollProgress = project.plannedRolls > 0 ? Math.round((produced.rolls / project.plannedRolls) * 100) : 0;
+                const meterProgress = project.plannedMeters > 0 ? Math.round((produced.meters / project.plannedMeters) * 100) : 0;
+                
+                const isComplete = (project.plannedRolls > 0 && rollProgress >= 100) || (project.plannedMeters > 0 && meterProgress >= 100);
+                
+                html += '<tr>';
+                html += '<td><strong>' + project.name + '</strong></td>';
+                html += '<td>' + project.productCode + '</td>';
+                html += '<td>' + project.plannedRolls + '反</td>';
+                html += '<td>' + project.plannedMeters.toFixed(1) + 'm</td>';
+                html += '<td>' + produced.rolls + '反</td>';
+                html += '<td>' + produced.meters.toFixed(1) + 'm</td>';
+                html += '<td><div class="progress-bar"><div class="progress-fill' + (rollProgress >= 100 ? ' complete' : '') + '" style="width: ' + Math.min(rollProgress, 100) + '%">' + rollProgress + '%</div></div></td>';
+                html += '<td><div class="progress-bar"><div class="progress-fill' + (meterProgress >= 100 ? ' complete' : '') + '" style="width: ' + Math.min(meterProgress, 100) + '%">' + meterProgress + '%</div></div></td>';
+                html += '<td>' + project.startDate + '</td>';
+                html += '<td>' + (project.createdDate || '-') + '</td>';
+                html += '<td>';
+                if (isComplete) {
+                    html += '<button class="complete-btn" onclick="completeProject(\'' + project.id + '\')">完了</button>';
+                } else {
+                    html += '-';
+                }
+                html += '</td>';
+                html += '</tr>';
+            });
+            
+            html += '</table>';
+            container.innerHTML = html;
+        }
+
+        // 完了済みプロジェクト一覧更新
+        function updateCompletedList() {
+            const container = document.getElementById('completedList');
+            if (!container) return;
+            
+            const completedProjects = projects.filter(p => p.completed);
+            
+            if (completedProjects.length === 0) {
+                container.innerHTML = '<p class="empty">完了済みプロジェクトはありません</p>';
+                return;
+            }
+            
+            let html = '<table>';
+            html += '<tr><th>プロジェクト名</th><th>品番</th><th>計画反数</th><th>計画m数</th><th>製織反数</th><th>製織m数</th><th>達成率</th><th>開始日</th><th>完了日</th><th>操作</th></tr>';
+            
+            completedProjects.forEach(project => {
+                const produced = getProducedAmount(project.id);
+                const rollProgress = project.plannedRolls > 0 ? Math.round((produced.rolls / project.plannedRolls) * 100) : 0;
+                const meterProgress = project.plannedMeters > 0 ? Math.round((produced.meters / project.plannedMeters) * 100) : 0;
+                const avgProgress = Math.round((rollProgress + meterProgress) / 2);
+                
+                html += '<tr>';
+                html += '<td><strong>' + project.name + '</strong><span class="completed-badge">完了</span></td>';
+                html += '<td>' + project.productCode + '</td>';
+                html += '<td>' + project.plannedRolls + '反</td>';
+                html += '<td>' + project.plannedMeters.toFixed(1) + 'm</td>';
+                html += '<td>' + produced.rolls + '反</td>';
+                html += '<td>' + produced.meters.toFixed(1) + 'm</td>';
+                html += '<td>' + avgProgress + '%</td>';
+                html += '<td>' + project.startDate + '</td>';
+                html += '<td>' + (project.completedDate || '-') + '</td>';
+                html += '<td><button class="reopen-btn" onclick="reopenProject(\'' + project.id + '\')">再開</button></td>';
+                html += '</tr>';
+            });
+            
+            html += '</table>';
+            container.innerHTML = html;
+        }
+
+        function updateProjectSelect() {
+            const select = document.getElementById('selectProject');
+            if (!select) return;
+            
+            let optionsHtml = '<option value="">プロジェクトを選択</option>';
+            
+            const activeProjects = projects.filter(p => !p.completed);
+            activeProjects.forEach(project => {
+                optionsHtml += '<option value="' + project.id + '">' + project.name + ' (' + project.productCode + ')</option>';
+            });
+            
+            select.innerHTML = optionsHtml;
+        }
+
+        function updateYarnProjectSelect() {
+            const select = document.getElementById('yarnProject');
+            if (!select) return;
+            
+            let optionsHtml = '<option value="">プロジェクトを選択（任意）</option>';
+            
+            const activeProjects = projects.filter(p => !p.completed);
+            activeProjects.forEach(project => {
+                optionsHtml += '<option value="' + project.id + '">' + project.name + ' (' + project.productCode + ')</option>';
+            });
+            
+            select.innerHTML = optionsHtml;
+        }
+
+        function updateHistoryFilter() {
+            const filter = document.getElementById('historyFilter');
+            if (!filter) return;
+            
+            let optionsHtml = '<option value="">全プロジェクト</option>';
+            
+            projects.forEach(project => {
+                const status = project.completed ? '【完了】' : '';
+                optionsHtml += '<option value="' + project.id + '">' + status + project.name + '</option>';
+            });
+            
+            filter.innerHTML = optionsHtml;
+        }
+
+        function updateYarnHistoryFilter() {
+            const filter = document.getElementById('yarnHistoryFilter');
+            if (!filter) return;
+            
+            const uniqueCodes = [...new Set(yarns.map(y => y.code))];
+            
+            let optionsHtml = '<option value="">全品番</option>';
+            uniqueCodes.forEach(code => {
+                optionsHtml += '<option value="' + code + '">' + code + '</option>';
+            });
+            
+            filter.innerHTML = optionsHtml;
+        }
+
+        function updateYarnHistory() {
+            const container = document.getElementById('yarnHistoryList');
+            if (!container) return;
+            
+            const filterCode = document.getElementById('yarnHistoryFilter').value;
+            const filterDest = document.getElementById('yarnDestFilter').value;
+            
+            let filteredYarns = yarns;
+            if (filterCode) {
+                filteredYarns = filteredYarns.filter(y => y.code === filterCode);
+            }
+            if (filterDest) {
+                filteredYarns = filteredYarns.filter(y => y.warehouse === filterDest);
+            }
+            
+            if (filteredYarns.length === 0) {
+                container.innerHTML = '<p class="empty">入出庫履歴がありません</p>';
+                return;
+            }
+            
+            const sortedYarns = [...filteredYarns].sort((a, b) => {
+                const dateCompare = b.date.localeCompare(a.date);
+                if (dateCompare !== 0) return dateCompare;
+                return b.createdDate ? b.createdDate.localeCompare(a.createdDate || '') : 0;
+            });
+            
+            let html = '<table>';
+            html += '<tr><th>日付</th><th>登録日</th><th>種別</th><th>糸品番</th><th>投入先</th><th>重量</th><th>単位</th><th>プロジェクト</th><th>備考</th></tr>';
+            
+            sortedYarns.forEach(yarn => {
+                html += '<tr>';
+                html += '<td>' + yarn.date + '</td>';
+                html += '<td>' + (yarn.createdDate || '-') + '</td>';
+                html += '<td><span class="' + (yarn.type === '入庫' ? 'in-badge' : 'out-badge') + '">' + yarn.type + '</span></td>';
+                html += '<td>' + yarn.code + '</td>';
+                html += '<td>' + yarn.warehouse + '</td>';
+                html += '<td>' + yarn.weight.toFixed(2) + '</td>';
+                html += '<td>' + yarn.unit + '</td>';
+                html += '<td>' + (yarn.projectName || '-') + '</td>';
+                html += '<td>' + (yarn.note || '-') + '</td>';
+                html += '</tr>';
+            });
+            
+            html += '</table>';
+            container.innerHTML = html;
+        }
+
+        function updateProductionHistory() {
+            const container = document.getElementById('productionHistory');
+            if (!container) return;
+            
+            const filterId = document.getElementById('historyFilter').value;
+            
+            let filteredProductions = productions;
+            if (filterId) {
+                filteredProductions = productions.filter(p => p.projectId === filterId);
+            }
+            
+            if (filteredProductions.length === 0) {
+                container.innerHTML = '<p class="empty">製織履歴がありません</p>';
+                return;
+            }
+            
+            const groupedByDate = {};
+            filteredProductions.forEach(prod => {
+                if (!groupedByDate[prod.date]) {
+                    groupedByDate[prod.date] = [];
+                }
+                groupedByDate[prod.date].push(prod);
+            });
+            
+            const sortedDates = Object.keys(groupedByDate).sort().reverse();
+            
+            let html = '';
+            sortedDates.forEach(date => {
+                html += '<div class="history-item">';
+                html += '<div class="history-date">📅 ' + date + '</div>';
+                html += '<table style="margin-top: 10px;">';
+                html += '<tr><th>プロジェクト</th><th>品番</th><th>反数</th><th>メートル数</th><th>投入先</th><th>登録日</th></tr>';
+                
+                groupedByDate[date].forEach(prod => {
+                    html += '<tr>';
+                    html += '<td>' + prod.projectName + '</td>';
+                    html += '<td>' + prod.productCode + '</td>';
+                    html += '<td>' + prod.rolls + '反</td>';
+                    html += '<td>' + prod.meters.toFixed(1) + 'm</td>';
+                    html += '<td><span class="destination-badge">' + prod.destination + '</span></td>';
+                    html += '<td>' + (prod.createdDate || '-') + '</td>';
+                    html += '</tr>';
+                });
+                
+                html += '</table>';
+                html += '</div>';
+            });
+            
+            container.innerHTML = html;
+        }
+
+        function getProducedAmount(projectId) {
+            const projectProductions = productions.filter(p => p.projectId === projectId);
+            return {
+                rolls: projectProductions.reduce((sum, p) => sum + p.rolls, 0),
+                meters: projectProductions.reduce((sum, p) => sum + p.meters, 0)
+            };
+        }
+
+        function updateIshiiStock() {
+            const container = document.getElementById('ishiiStockList');
+            if (!container) return;
+            
+            if (ishiiStock.length === 0 || ishiiStock.every(s => s.rolls === 0 && s.meters === 0)) {
+                container.innerHTML = '<p class="empty">石井加工に在庫がありません</p>';
+                return;
+            }
+            
+            let html = '';
+            
+            ishiiStock.forEach(stock => {
+                if (stock.rolls > 0 || stock.meters > 0) {
+                    html += '<div class="stock-card">';
+                    html += '<div class="stock-header">';
+                    html += '<span>品番: ' + stock.productCode + '</span>';
+                    html += '<span>在庫: ' + stock.rolls + '反 / ' + stock.meters.toFixed(1) + 'm</span>';
+                    html += '</div>';
+                    html += '</div>';
+                }
+            });
+            
+            if (html === '') {
+                html = '<p class="empty">石井加工に在庫がありません</p>';
+            }
+            
+            container.innerHTML = html;
+        }
+
+        function updateIshiiShipmentHistory() {
+            const container = document.getElementById('ishiiShipmentHistory');
+            if (!container) return;
+            
+            if (ishiiShipments.length === 0) {
+                container.innerHTML = '<p class="empty">出庫履歴がありません</p>';
+                return;
+            }
+            
+            let html = '<table>';
+            html += '<tr><th>日付</th><th>品番</th><th>適用指図No</th><th>反数</th><th>メートル数</th><th>登録日</th><th>備考</th></tr>';
+            
+            const sorted = [...ishiiShipments].sort((a, b) => b.date.localeCompare(a.date));
+            
+            sorted.forEach(shipment => {
+                html += '<tr>';
+                html += '<td>' + shipment.date + '</td>';
+                html += '<td>' + shipment.productCode + '</td>';
+                html += '<td><span class="order-no">' + shipment.orderNo + '</span></td>';
+                html += '<td>' + shipment.rolls + '反</td>';
+                html += '<td>' + shipment.meters.toFixed(1) + 'm</td>';
+                html += '<td>' + (shipment.createdDate || '-') + '</td>';
+                html += '<td>' + (shipment.note || '-') + '</td>';
+                html += '</tr>';
+            });
+            
+            html += '</table>';
+            container.innerHTML = html;
+        }
+
+        function updateIshiiCodeSelect() {
+            const select = document.getElementById('ishiiOutCode');
+            if (!select) return;
+            
+            let optionsHtml = '<option value="">品番を選択</option>';
+            
+            ishiiStock.forEach(stock => {
+                if (stock.rolls > 0 || stock.meters > 0) {
+                    optionsHtml += '<option value="' + stock.productCode + '">' + stock.productCode + ' (在庫: ' + stock.rolls + '反 / ' + stock.meters.toFixed(1) + 'm)</option>';
+                }
+            });
+            
+            select.innerHTML = optionsHtml;
+        }
+
+        function updateWarehouseList() {
+            const container = document.getElementById('warehouseList');
+            if (!container) return;
+            
+            const warehouses = ['川上織物', '加美サイジング', '岸田サイジング'];
+            
+            let html = '';
+            
+            warehouses.forEach(warehouse => {
+                html += '<div class="warehouse-header">🏢 ' + warehouse + '</div>';
+                const stocks = getWarehouseStocks(warehouse);
+                
+                if (Object.keys(stocks).length === 0) {
+                    html += '<p style="padding: 10px; color: #999;">在庫なし</p>';
+                } else {
+                    html += '<table>';
+                    html += '<tr><th>糸品番</th><th>在庫量 (kg)</th><th>在庫量 (ポンド)</th><th>最終更新</th></tr>';
+                    
+                    for (const [code, data] of Object.entries(stocks)) {
+                        html += '<tr>';
+                        html += '<td>' + code + '</td>';
+                        html += '<td>' + data.kg.toFixed(2) + ' kg</td>';
+                        html += '<td>' + data.pounds.toFixed(2) + ' ポンド</td>';
+                        html += '<td>' + data.lastUpdate + '</td>';
+                        html += '</tr>';
+                    }
+                    
+                    html += '</table>';
+                }
+            });
+            
+            container.innerHTML = html;
+        }
+
+        function getWarehouseStocks(warehouse) {
+            const stocks = {};
+            
+            yarns.filter(y => y.warehouse === warehouse).forEach(yarn => {
+                if (!stocks[yarn.code]) {
+                    stocks[yarn.code] = {
+                        kg: 0,
+                        pounds: 0,
+                        lastUpdate: yarn.date
+                    };
+                }
+                
+                let weightInKg = yarn.weight;
+                if (yarn.unit === 'ポンド') {
+                    weightInKg = yarn.weight * 0.453592;
+                }
+                
+                if (yarn.type === '入庫') {
+                    stocks[yarn.code].kg += weightInKg;
+                } else {
+                    stocks[yarn.code].kg -= weightInKg;
+                }
+                
+                stocks[yarn.code].pounds = stocks[yarn.code].kg * 2.20462;
+                
+                if (yarn.date > stocks[yarn.code].lastUpdate) {
+                    stocks[yarn.code].lastUpdate = yarn.date;
+                }
+            });
+            
+            return stocks;
+        }
+
+        function updateStats() {
+            const container = document.getElementById('stats');
+            if (!container) return;
+            
+            const activeProjects = projects.filter(p => !p.completed);
+            const completedProjects = projects.filter(p => p.completed);
+            
+            const totalPlannedRolls = projects.reduce((sum, p) => sum + p.plannedRolls, 0);
+            const totalPlannedMeters = projects.reduce((sum, p) => sum + p.plannedMeters, 0);
+            const totalProducedRolls = productions.reduce((sum, p) => sum + p.rolls, 0);
+            const totalProducedMeters = productions.reduce((sum, p) => sum + p.meters, 0);
+            
+            const destinationStats = {};
+            productions.forEach(p => {
+                if (!destinationStats[p.destination]) {
+                    destinationStats[p.destination] = { rolls: 0, meters: 0 };
+                }
+                destinationStats[p.destination].rolls += p.rolls;
+                destinationStats[p.destination].meters += p.meters;
+            });
+            
+            let html = '<div class="stats-grid">';
+            html += '<div class="stat-card"><div class="stat-label">進行中</div><div class="stat-value">' + activeProjects.length + '件</div></div>';
+            html += '<div class="stat-card"><div class="stat-label">完了済み</div><div class="stat-value">' + completedProjects.length + '件</div></div>';
+            html += '<div class="stat-card"><div class="stat-label">総計画反数</div><div class="stat-value">' + totalPlannedRolls + '反</div></div>';
+            html += '<div class="stat-card"><div class="stat-label">総計画メートル数</div><div class="stat-value">' + totalPlannedMeters.toFixed(1) + 'm</div></div>';
+            html += '<div class="stat-card"><div class="stat-label">総製織反数</div><div class="stat-value">' + totalProducedRolls + '反</div></div>';
+            html += '<div class="stat-card"><div class="stat-label">総製織メートル数</div><div class="stat-value">' + totalProducedMeters.toFixed(1) + 'm</div></div>';
+            
+            for (const [dest, stats] of Object.entries(destinationStats)) {
+                html += '<div class="stat-card" style="background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);">';
+                html += '<div class="stat-label">' + dest + '</div>';
+                html += '<div class="stat-value">' + stats.rolls + '反 / ' + stats.meters.toFixed(1) + 'm</div>';
+                html += '</div>';
+            }
+            
+            html += '</div>';
+            
+            container.innerHTML = html;
+        }
+
+        function updateInventorySummary() {
+            const container = document.getElementById('inventorySummary');
+            if (!container) return;
+            
+            let html = '';
+            
+            // 原糸在庫サマリー
+            html += '<div class="summary-section">';
+            html += '<div class="summary-title">📦 原糸在庫統合サマリー</div>';
+            
+            const yarnByCode = {};
+            const warehouses = ['川上織物', '加美サイジング', '岸田サイジング'];
+            
+            yarns.forEach(yarn => {
+                if (!yarnByCode[yarn.code]) {
+                    yarnByCode[yarn.code] = { 
+                        kg: 0, 
+                        pounds: 0, 
+                        warehouses: {}
+                    };
+                }
+                
+                if (!yarnByCode[yarn.code].warehouses[yarn.warehouse]) {
+                    yarnByCode[yarn.code].warehouses[yarn.warehouse] = { kg: 0, pounds: 0 };
+                }
+                
+                let weightInKg = yarn.weight;
+                if (yarn.unit === 'ポンド') {
+                    weightInKg = yarn.weight * 0.453592;
+                }
+                
+                if (yarn.type === '入庫') {
+                    yarnByCode[yarn.code].kg += weightInKg;
+                    yarnByCode[yarn.code].warehouses[yarn.warehouse].kg += weightInKg;
+                } else {
+                    yarnByCode[yarn.code].kg -= weightInKg;
+                    yarnByCode[yarn.code].warehouses[yarn.warehouse].kg -= weightInKg;
+                }
+            });
+            
+            for (const code in yarnByCode) {
+                yarnByCode[code].pounds = yarnByCode[code].kg * 2.20462;
+                for (const wh in yarnByCode[code].warehouses) {
+                    yarnByCode[code].warehouses[wh].pounds = yarnByCode[code].warehouses[wh].kg * 2.20462;
+                }
+            }
+            
+            if (Object.keys(yarnByCode).length > 0) {
+                html += '<table>';
+                html += '<tr><th>糸品番</th><th>総在庫(kg)</th><th>総在庫(ポンド)</th><th>川上織物</th><th>加美サイジング</th><th>岸田サイジング</th></tr>';
+                
+                for (const [code, data] of Object.entries(yarnByCode)) {
+                    if (data.kg > 0.01) {
+                        html += '<tr>';
+                        html += '<td><strong>' + code + '</strong></td>';
+                        html += '<td>' + data.kg.toFixed(2) + '</td>';
+                        html += '<td>' + data.pounds.toFixed(2) + '</td>';
+                        
+                        warehouses.forEach(wh => {
+                            if (data.warehouses[wh] && data.warehouses[wh].kg > 0.01) {
+                                html += '<td>' + data.warehouses[wh].kg.toFixed(1) + 'kg</td>';
+                            } else {
+                                html += '<td>-</td>';
+                            }
+                        });
+                        
+                        html += '</tr>';
+                    }
+                }
+                
+                html += '</table>';
+            } else {
+                html += '<p style="color: #999; padding: 10px;">原糸在庫なし</p>';
+            }
+            html += '</div>';
+            
+            container.innerHTML = html;
+        }
+
+        // グローバルスコープに関数を登録
+        window.completeProject = completeProject;
+        window.reopenProject = reopenProject;
+        window.addProject = addProject;
+        window.addProduction = addProduction;
+        window.addYarn = addYarn;
+        window.ishiiShipOut = ishiiShipOut;
+        window.showTab = showTab;
+        window.updateProductionHistory = updateProductionHistory;
+        window.updateYarnHistory = updateYarnHistory;
+
+        // ページ読み込み時に初期化
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>
