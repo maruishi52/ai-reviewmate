@@ -1,0 +1,20 @@
+{
+  "name": "production-management-system",
+  "version": "1.0.0",
+  "description": "生産管理システム - 生機製織管理と在庫管理システム",
+  "main": "index.html",
+  "scripts": {
+    "start": "npx serve .",
+    "dev": "npx serve . -p 3000"
+  },
+  "keywords": [
+    "production",
+    "management",
+    "inventory",
+    "firebase"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {},
+  "dependencies": {}
+}
