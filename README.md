@@ -22,26 +22,69 @@
    ```
    ⚠️ **注意**: 本番環境では適切なセキュリティルールを設定してください。
 
-### 2. Firebase設定の追加
+### 2. Firebase設定の追加（詳しい手順）
 
-1. Firebase Consoleで「プロジェクトの設定」を開く
-2. 「アプリを追加」から「ウェブ」を選択
-3. 表示された設定情報をコピー
-4. `firebase-config.js` ファイルを編集して、設定情報を追加:
+#### ステップ1: Firebase Consoleにアクセス
+1. ブラウザで [Firebase Console](https://console.firebase.google.com/) を開く
+2. Googleアカウントでログイン
+
+#### ステップ2: プロジェクトを作成（まだ作成していない場合）
+1. 「プロジェクトを追加」または「Add project」をクリック
+2. プロジェクト名を入力（例: "ai-reviewmate"）
+3. Google Analyticsの設定は任意（スキップ可能）
+4. 「プロジェクトを作成」をクリック
+5. 作成完了まで待つ（1-2分）
+
+#### ステップ3: Firestore Databaseを有効化
+1. プロジェクトが作成されたら、左側のメニューから「Firestore Database」をクリック
+2. 「データベースの作成」をクリック
+3. 「テストモードで開始」を選択（開発用）
+4. ロケーションを選択（例: "asia-northeast1 (Tokyo)"）
+5. 「有効にする」をクリック
+
+#### ステップ4: ウェブアプリを追加して設定情報を取得
+1. 左側のメニューから「⚙️ プロジェクトの設定」（歯車アイコン）をクリック
+2. 下にスクロールして「マイアプリ」セクションを見つける
+3. 「</>」（ウェブアイコン）をクリックして「ウェブアプリを追加」
+4. アプリのニックネームを入力（例: "AI-ReviewMate Web"）
+5. 「このアプリのFirebase Hostingも設定します」のチェックは外してOK
+6. 「アプリを登録」をクリック
+
+#### ステップ5: 設定情報をコピー
+7. 以下のような設定情報が表示されます：
    ```javascript
-   window.firebaseConfig = {
-       apiKey: "あなたのAPIキー",
-       authDomain: "あなたのプロジェクトID.firebaseapp.com",
-       projectId: "あなたのプロジェクトID",
-       storageBucket: "あなたのプロジェクトID.appspot.com",
-       messagingSenderId: "あなたのメッセージング送信者ID",
-       appId: "あなたのアプリID"
+   const firebaseConfig = {
+     apiKey: "AIzaSyXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+     authDomain: "your-project-id.firebaseapp.com",
+     projectId: "your-project-id",
+     storageBucket: "your-project-id.appspot.com",
+     messagingSenderId: "123456789012",
+     appId: "1:123456789012:web:abcdef1234567890"
    };
    ```
+8. この情報をコピーします
 
-### 3. index.htmlの設定を更新
+#### ステップ6: firebase-config.jsファイルを編集
+9. このプロジェクトの `firebase-config.js` ファイルを開く
+10. コピーした設定情報を貼り付け、以下の形式に変更：
+   ```javascript
+   window.firebaseConfig = {
+       apiKey: "AIzaSyXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+       authDomain: "your-project-id.firebaseapp.com",
+       projectId: "your-project-id",
+       storageBucket: "your-project-id.appspot.com",
+       messagingSenderId: "123456789012",
+       appId: "1:123456789012:web:abcdef1234567890"
+   };
+   ```
+   （`const firebaseConfig =` を `window.firebaseConfig =` に変更）
 
-`index.html` 内のFirebase設定も同様に更新してください（`firebaseConfig` オブジェクト）。
+#### ステップ7: index.htmlの設定も更新（オプション）
+11. `index.html` ファイル内の `firebaseConfig` オブジェクトも同じ値に更新してください
+   - `index.html` は `firebase-config.js` から自動的に設定を読み込むため、このステップは必須ではありません
+   - ただし、両方に同じ設定を入れておくと安全です
+
+📖 **より詳しい手順**: `FIREBASE_SETUP.md` ファイルも参照してください
 
 ## GitHub Pagesでのデプロイ
 
