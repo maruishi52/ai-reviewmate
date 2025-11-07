@@ -36,8 +36,11 @@
             border-radius: 4px;
             min-height: 100px;
         }
-        input[type="file"] {
+        input[type="file"], input[type="text"], input[type="url"] {
             margin: 10px 0;
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
         }
     </style>
 </head>
@@ -56,6 +59,10 @@
         <h3>方法2: ファイル名を指定して読み込み</h3>
         <input type="text" id="fileName" placeholder="例: example.htm" />
         <button onclick="loadHTMByFileName()">ファイルを読み込む</button>
+        
+        <h3>方法3: URLから読み込み</h3>
+        <input type="url" id="urlInput" placeholder="https://resplendent-axolotl-b1dddb.netlify.app/example.htm" value="https://resplendent-axolotl-b1dddb.netlify.app/" />
+        <button onclick="loadHTMFromURL()">URLから読み込む</button>
         
         <div id="content">
             <p>読み込んだ内容がここに表示されます...</p>
@@ -113,10 +120,57 @@
             }
         }
         
+        // 方法3: URLから読み込む
+        async function loadHTMFromURL() {
+            const urlInput = document.getElementById('urlInput');
+            const url = urlInput.value.trim();
+            
+            if (!url) {
+                alert('URLを入力してください');
+                return;
+            }
+            
+            // URLの検証
+            try {
+                new URL(url);
+            } catch (error) {
+                alert('有効なURLを入力してください');
+                return;
+            }
+            
+            try {
+                const response = await fetch(url, {
+                    mode: 'cors'
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const text = await response.text();
+                document.getElementById('content').innerHTML = text;
+                console.log('URLからファイルを読み込みました:', url);
+            } catch (error) {
+                console.error('読み込みエラー:', error);
+                if (error.name === 'TypeError' && error.message.includes('fetch')) {
+                    alert('CORSエラー: サーバーがクロスオリジンリクエストを許可していない可能性があります。\n\nエラー: ' + error.message);
+                } else {
+                    alert('ファイルの読み込みに失敗しました: ' + error.message);
+                }
+            }
+        }
+        
         // ファイル選択時に自動で読み込む（オプション）
         document.getElementById('fileInput').addEventListener('change', function() {
             if (this.files.length > 0) {
                 loadHTMFile();
+            }
+        });
+        
+        // EnterキーでURL読み込み
+        document.getElementById('urlInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                loadHTMFromURL();
             }
         });
     </script>
