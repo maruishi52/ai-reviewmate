@@ -4,9 +4,121 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI-ReviewMate</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .load-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #content {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f5f5f5;
+            border-radius: 4px;
+            min-height: 100px;
+        }
+        input[type="file"] {
+            margin: 10px 0;
+        }
+    </style>
 </head>
 <body>
     <h1>AI-ReviewMate</h1>
     <p>楽天レビューの自動取得＆自動返信を行うAIシステムです。</p>
+    
+    <div class="load-section">
+        <h2>.htmファイルの読み込み</h2>
+        <p>.htmファイルを読み込む方法の例：</p>
+        
+        <h3>方法1: ファイル選択で読み込み</h3>
+        <input type="file" id="fileInput" accept=".htm,.html" />
+        <button onclick="loadHTMFile()">選択したファイルを読み込む</button>
+        
+        <h3>方法2: ファイル名を指定して読み込み</h3>
+        <input type="text" id="fileName" placeholder="例: example.htm" />
+        <button onclick="loadHTMByFileName()">ファイルを読み込む</button>
+        
+        <div id="content">
+            <p>読み込んだ内容がここに表示されます...</p>
+        </div>
+    </div>
+
+    <script>
+        // 方法1: ファイル選択で読み込む
+        async function loadHTMFile() {
+            const fileInput = document.getElementById('fileInput');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                alert('ファイルを選択してください');
+                return;
+            }
+            
+            if (!file.name.endsWith('.htm') && !file.name.endsWith('.html')) {
+                alert('HTMLファイルを選択してください');
+                return;
+            }
+            
+            try {
+                const text = await file.text();
+                document.getElementById('content').innerHTML = text;
+                console.log('ファイルを読み込みました:', file.name);
+            } catch (error) {
+                console.error('読み込みエラー:', error);
+                alert('ファイルの読み込みに失敗しました: ' + error.message);
+            }
+        }
+        
+        // 方法2: ファイル名を指定して読み込む（同じディレクトリ内のファイル）
+        async function loadHTMByFileName() {
+            const fileName = document.getElementById('fileName').value.trim();
+            
+            if (!fileName) {
+                alert('ファイル名を入力してください');
+                return;
+            }
+            
+            try {
+                const response = await fetch(fileName);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const text = await response.text();
+                document.getElementById('content').innerHTML = text;
+                console.log('ファイルを読み込みました:', fileName);
+            } catch (error) {
+                console.error('読み込みエラー:', error);
+                alert('ファイルの読み込みに失敗しました: ' + error.message + '\n\n注意: 同じディレクトリ内にファイルが存在する必要があります。');
+            }
+        }
+        
+        // ファイル選択時に自動で読み込む（オプション）
+        document.getElementById('fileInput').addEventListener('change', function() {
+            if (this.files.length > 0) {
+                loadHTMFile();
+            }
+        });
+    </script>
 </body>
 </html>
